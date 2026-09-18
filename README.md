@@ -42,7 +42,9 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 - **Step 5 (validate the hook actually fires in a live session) — not yet done, requires a human at the keyboard.** custody's own README documents a confirmed, unresolved finding: a `.claude/settings.json` in a directory a session merely `cd`s into mid-session never fires the hook — Claude Code reads project hooks from the session's root at launch. **Before trusting this pipeline for real**, start a fresh `claude` process with this repo (`playhead/`) as its own root, make one real edit, and confirm a file appears in `.playhead/events/`. See `hooks/settings.snippet.json` if wiring this into another project instead.
 - **Step 6 (FastAPI + DB) — done.** `backend/app/` exposes `POST /events` (idempotent on `tool_use_id`), `GET /sessions`, `GET /sessions/{id}/events`. Defaults to local SQLite (`DATABASE_URL` env var to point at Postgres instead). Verified end-to-end: a real event produced by `playhead-hook` was posted, re-posted (confirmed idempotent), and read back correctly.
 - **Step 7 (`playhead sync`) — done and verified** against the running backend: spools from `.playhead/events/`, uploads, moves to `.playhead/sent/` on success, retries on failure.
-- **Step 8 onward (multi-track canvas timeline, diff theater, blast-radius map, terminal replay, anomaly detection, frontend) — not started.**
+- **Step 8a (flat, unstyled timeline) — done.** `frontend/` (Vite + React + TS): session picker, an `<input type=range>` playhead over real events from the API, clickable blocks. Verified live in-browser against a real seeded session.
+- **Step 8b (diff theater with real animated morphing) — done.** `frontend/src/DiffTheater.tsx`: word-level diff (`diffWordsWithSpace`), staggered reveal/collapse animation instead of a static red/green table. Verified live for both a pure-insertion case and a real-removal case.
+- **Remaining: custom canvas multi-track timeline, terminal replay strip, blast-radius radial map, anomaly detection, multi-session view — not started.**
 
 ### Running the backend locally
 

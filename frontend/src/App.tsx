@@ -1,13 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchSessionEvents, fetchSessions, type PlayheadEvent, type SessionSummary } from "./api";
 import DiffTheater from "./DiffTheater";
-
-// Deliberately the plainest possible version of the timeline: a single
-// <input type=range> playhead over events placed by timestamp, no canvas,
-// no styling beyond what's needed to read it. This exists to prove the
-// data model (sessions -> ordered events -> a scrubbable position) supports
-// the interaction before any time goes into the real multi-track canvas
-// renderer, diff-theater morphing, or blast-radius map.
+import TimelineCanvas from "./TimelineCanvas";
+import TerminalStrip from "./TerminalStrip";
 
 function activeEventIndex(events: PlayheadEvent[], playheadTs: number): number {
   if (events.length === 0) return -1;
@@ -41,14 +36,12 @@ export default function App() {
       .catch((e) => setError(String(e)));
   }, [selectedSession]);
 
-  const minTs = events[0]?.ts_start ?? 0;
-  const maxTs = events[events.length - 1]?.ts_end ?? 1;
   const activeIdx = useMemo(() => activeEventIndex(events, playheadTs), [events, playheadTs]);
   const active = activeIdx >= 0 ? events[activeIdx] : null;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20 }}>Playhead — flat timeline (step 8a)</h1>
+    <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
+      <h1 style={{ fontSize: 20 }}>Playhead</h1>
 
       {error && <p style={{ color: "#f66" }}>{error}</p>}
 
@@ -72,39 +65,11 @@ export default function App() {
       {events.length > 0 && (
         <>
           <section style={{ marginBottom: 16 }}>
-            <input
-              type="range"
-              min={minTs}
-              max={maxTs}
-              step={(maxTs - minTs) / 1000 || 0.01}
-              value={playheadTs}
-              onChange={(e) => setPlayheadTs(Number(e.target.value))}
-              style={{ width: "100%" }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, opacity: 0.6 }}>
-              <span>{new Date(minTs * 1000).toLocaleTimeString()}</span>
-              <span>{new Date(maxTs * 1000).toLocaleTimeString()}</span>
-            </div>
+            <TimelineCanvas events={events} playheadTs={playheadTs} onScrub={setPlayheadTs} />
           </section>
 
-          <section style={{ display: "flex", gap: 4, marginBottom: 24, flexWrap: "wrap" }}>
-            {events.map((ev, i) => (
-              <div
-                key={ev.tool_use_id}
-                onClick={() => setPlayheadTs(ev.ts_start)}
-                style={{
-                  padding: "4px 8px",
-                  fontSize: 11,
-                  cursor: "pointer",
-                  background: i === activeIdx ? "#4a9eff" : "#333",
-                  color: i === activeIdx ? "#111" : "#ccc",
-                  borderRadius: 3,
-                }}
-                title={ev.file_path ?? ev.bash_command ?? ""}
-              >
-                {ev.tool_name}
-              </div>
-            ))}
+          <section style={{ marginBottom: 24 }}>
+            <TerminalStrip events={events} playheadTs={playheadTs} />
           </section>
 
           {active && (

@@ -1,0 +1,35 @@
+.terminal-strip {
+  background: #0c0c0c;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #7ee787;
+  white-space: pre-wrap;
+  min-height: 60px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.terminal-strip-prompt {
+  color: #4a9eff;
+}
+
+.terminal-strip-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 13px;
+  background: #7ee787;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.terminal-strip-empty {
+  color: #555;
+}
