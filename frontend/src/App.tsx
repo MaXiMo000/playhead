@@ -3,6 +3,7 @@ import { fetchSessionEvents, fetchSessions, type PlayheadEvent, type SessionSumm
 import DiffTheater from "./DiffTheater";
 import TimelineCanvas from "./TimelineCanvas";
 import TerminalStrip from "./TerminalStrip";
+import BlastRadiusMap from "./BlastRadiusMap";
 
 function activeEventIndex(events: PlayheadEvent[], playheadTs: number): number {
   if (events.length === 0) return -1;
@@ -70,6 +71,10 @@ export default function App() {
 
           <section style={{ marginBottom: 24 }}>
             <TerminalStrip events={events} playheadTs={playheadTs} />
+          </section>
+
+          <section style={{ marginBottom: 24 }}>
+            <BlastRadiusMap events={events} playheadTs={playheadTs} />
           </section>
 
           {active && (
