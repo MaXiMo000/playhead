@@ -39,7 +39,7 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 ## Status
 
 - **Step 1-4 (hook package) — done.** `playhead_hook/` (`core.py` pure event-shaping, `hook.py` stdin/stdout glue, `sync.py` uploader) is built, unit-tested (`tests/`), installed in editable mode, and smoke-tested end-to-end via the real `playhead-hook`/`playhead-sync` console scripts piped real doc-shaped JSON — not just in-process. `.claude/settings.json` registers it.
-- **Step 5 (validate the hook actually fires in a live session) — not yet done, requires a human at the keyboard.** custody's own README documents a confirmed, unresolved finding: a `.claude/settings.json` in a directory a session merely `cd`s into mid-session never fires the hook — Claude Code reads project hooks from the session's root at launch. **Before trusting this pipeline for real**, start a fresh `claude` process with this repo (`playhead/`) as its own root, make one real edit, and confirm a file appears in `.playhead/events/`. See `hooks/settings.snippet.json` if wiring this into another project instead.
+- **Step 5 (validate the hook fires live) — done, root cause found and fixed.** It was never the "session root" concern custody's README speculated about — it was simpler: `.claude/settings.json` invokes the bare command `playhead-hook`, which only resolves if something is actually on `PATH`, and a project-local `.venv` never is. Confirmed live in a real Claude Code session: a real `Write` call with only the local `.venv` installed produced no `.playhead/events/` file at all. Fix: `pip install -e .` into the global/regular Python (not a venv) so the console scripts land in a directory already on `PATH`; re-verified live afterward with the bare `playhead-hook` command from a fresh shell and it correctly wrote a real event. See "Installing the hook" below.
 - **Step 6 (FastAPI + DB) — done.** `backend/app/` exposes `POST /events` (idempotent on `tool_use_id`), `GET /sessions`, `GET /sessions/{id}/events`. Defaults to local SQLite (`DATABASE_URL` env var to point at Postgres instead). Verified end-to-end: a real event produced by `playhead-hook` was posted, re-posted (confirmed idempotent), and read back correctly.
 - **Step 7 (`playhead sync`) — done and verified** against the running backend: spools from `.playhead/events/`, uploads, moves to `.playhead/sent/` on success, retries on failure.
 - **Step 8a (flat, unstyled timeline) — done.** `frontend/` (Vite + React + TS): session picker, an `<input type=range>` playhead over real events from the API, clickable blocks. Verified live in-browser against a real seeded session.
@@ -47,7 +47,7 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 - **Blast-radius radial map — built, correctness verified, full visual verification pending.** `frontend/src/BlastRadiusMap.tsx`: a `@react-three/fiber`/`three.js` force-directed graph (`d3-force`) of files touched, edges by consecutive-touch order (not a static dependency graph), a pulsing ring on the currently active file. Verified correct in-browser: TypeScript compiles clean, the graph/link computation over real seeded events produces the right nodes and edges, and a real WebGL context initializes. **Not yet confirmed pixel-rendered**: `@react-three/fiber`'s `<Canvas>` sizes itself via `ResizeObserver` (through `react-use-measure`), and this repo's automated preview pane's embedded WebKit view does not fire `ResizeObserver` callbacks at all (confirmed directly, independent of this component) — so the canvas never leaves its 300x150 fallback size in that one tool. This is a property of that specific preview embedding, not of real browsers, which support `ResizeObserver` universally — **please open `npm run dev` in an actual browser once and confirm the graph renders and the pulse animates** before relying on this component further.
 - **Anomaly detection pass — done.** `backend/app/anomaly.py`: a single heuristic (a file touched outside the session's own `cwd` is flagged) computed at ingestion time, stored on the event, surfaced in `TimelineCanvas.tsx` as a red spike on a dedicated ruler band plus a dashed orange outline on the block itself, and as a warning line in the detail panel. Unit-tested (`backend/tests/test_anomaly.py`, 8 cases including Windows path separators and case-insensitivity) and verified live end-to-end: a real out-of-scope event was posted, confirmed flagged by the API, and confirmed rendered as both a ruler spike and a badge in the browser.
 - **Multi-session view — done.** `frontend/src/SessionList.tsx` replaces the plain `<select>` with a searchable, metadata-rich list (event count, start time, duration). Verified live with three seeded sessions: search filtering and row-click selection both confirmed working.
-- **All originally planned build-order steps are now implemented.** The one still-open item is the manual, human-only check flagged above (step 5: does the hook actually fire in a real top-level session) and confirming the blast-radius map's pixel rendering in a real browser.
+- **All originally planned build-order steps are now implemented and the hook is confirmed live-firing end-to-end.** The one still-open item is confirming the blast-radius map's pixel rendering in a real browser (flagged above).
 
 ### Running the backend locally
 
@@ -60,7 +60,18 @@ uvicorn app.main:app --reload
 
 ### Installing the hook
 
+`.claude/settings.json` invokes the hook as the bare command `playhead-hook`, so it must resolve on the `PATH` of whatever shell launches `claude` -- **not** just inside a project-local `.venv`, which is never on `PATH` by design. Install it into your regular/global Python instead:
+
 ```
 pip install -e .
 ```
-then merge `hooks/settings.snippet.json` into this project's `.claude/settings.json` (already done in this repo) or `~/.claude/settings.json` for every project.
+
+(run outside any virtualenv, or use `pipx install -e .` for isolation while still landing on `PATH`). Verify it resolves before trusting it:
+
+```
+command -v playhead-hook   # or `where playhead-hook` on Windows
+```
+
+Then merge `hooks/settings.snippet.json` into this project's `.claude/settings.json` (already done in this repo) or `~/.claude/settings.json` for every project.
+
+A project-local `backend/.venv`-style install (e.g. `python -m venv .venv && .venv/Scripts/pip install -e .`) will build and pass all the tests but will **silently never fire** as a live hook -- confirmed directly: a real `Write` call in a session with only that venv installed produced no `.playhead/events/` file at all, while invoking the exact same installed script directly worked perfectly. The hook logic was never the problem; PATH resolution was.
