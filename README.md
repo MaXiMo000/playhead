@@ -38,4 +38,24 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 
 ## Status
 
-Scaffold stage — step 1 in progress.
+- **Step 1-4 (hook package) — done.** `playhead_hook/` (`core.py` pure event-shaping, `hook.py` stdin/stdout glue, `sync.py` uploader) is built, unit-tested (`tests/`), installed in editable mode, and smoke-tested end-to-end via the real `playhead-hook`/`playhead-sync` console scripts piped real doc-shaped JSON — not just in-process. `.claude/settings.json` registers it.
+- **Step 5 (validate the hook actually fires in a live session) — not yet done, requires a human at the keyboard.** custody's own README documents a confirmed, unresolved finding: a `.claude/settings.json` in a directory a session merely `cd`s into mid-session never fires the hook — Claude Code reads project hooks from the session's root at launch. **Before trusting this pipeline for real**, start a fresh `claude` process with this repo (`playhead/`) as its own root, make one real edit, and confirm a file appears in `.playhead/events/`. See `hooks/settings.snippet.json` if wiring this into another project instead.
+- **Step 6 (FastAPI + DB) — done.** `backend/app/` exposes `POST /events` (idempotent on `tool_use_id`), `GET /sessions`, `GET /sessions/{id}/events`. Defaults to local SQLite (`DATABASE_URL` env var to point at Postgres instead). Verified end-to-end: a real event produced by `playhead-hook` was posted, re-posted (confirmed idempotent), and read back correctly.
+- **Step 7 (`playhead sync`) — done and verified** against the running backend: spools from `.playhead/events/`, uploads, moves to `.playhead/sent/` on success, retries on failure.
+- **Step 8 onward (multi-track canvas timeline, diff theater, blast-radius map, terminal replay, anomaly detection, frontend) — not started.**
+
+### Running the backend locally
+
+```
+cd backend
+python -m venv .venv && .venv/Scripts/activate  # or source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
+
+### Installing the hook
+
+```
+pip install -e .
+```
+then merge `hooks/settings.snippet.json` into this project's `.claude/settings.json` (already done in this repo) or `~/.claude/settings.json` for every project.

@@ -1,0 +1,33 @@
+[project]
+name = "playhead-hook"
+version = "0.1.0"
+description = "A live Claude Code hook that spools an event for every Edit/Write/Bash tool call, for Playhead's video-editor-style replay timeline."
+requires-python = ">=3.10"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["ai-agents", "audit", "claude-code", "hooks", "observability", "provenance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = ["requests>=2.31"]
+
+urls.Homepage = "https://github.com/MaXiMo000/playhead"
+urls.Source = "https://github.com/MaXiMo000/playhead"
+urls.Issues = "https://github.com/MaXiMo000/playhead/issues"
+
+[project.scripts]
+playhead-hook = "playhead_hook.hook:main"
+playhead-sync = "playhead_hook.sync:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["playhead_hook*"]
