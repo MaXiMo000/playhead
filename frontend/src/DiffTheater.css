@@ -1,0 +1,89 @@
+.diff-theater {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 1.6;
+  background: #1a1a1a;
+  padding: 16px;
+  border-radius: 6px;
+  overflow: auto;
+  max-height: 420px;
+}
+
+.diff-same {
+  color: #ccc;
+}
+
+/* Added text fades and lifts in, staggered per chunk (via inline
+   animation-delay) so the whole diff reads left-to-right as if it were
+   being typed, rather than a static red/green block appearing all at once. */
+.diff-added {
+  color: #7ee787;
+  background: rgba(46, 160, 67, 0.15);
+  border-radius: 2px;
+  display: inline-block;
+  opacity: 0;
+  animation: reveal-in 320ms ease forwards;
+}
+
+/* Removed text is shown struck-through first, so you can still read what
+   was there, then visibly collapses away -- the "watch the edit happen"
+   moment, not a diff you have to parse statically. */
+.diff-removed {
+  color: #ff7b72;
+  background: rgba(248, 81, 73, 0.12);
+  text-decoration: line-through;
+  border-radius: 2px;
+  display: inline-block;
+  overflow: hidden;
+  max-width: 600px;
+  animation: collapse-out 620ms ease forwards;
+}
+
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes collapse-out {
+  0% {
+    max-width: 600px;
+    opacity: 1;
+  }
+  55% {
+    max-width: 600px;
+    opacity: 1;
+  }
+  100% {
+    max-width: 0;
+    opacity: 0;
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+.diff-theater-controls {
+  margin-bottom: 8px;
+}
+
+.diff-theater-controls button {
+  font-family: inherit;
+  font-size: 11px;
+  background: #333;
+  color: #ccc;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.diff-theater-controls button:hover {
+  background: #444;
+}

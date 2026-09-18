@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchSessionEvents, fetchSessions, type PlayheadEvent, type SessionSummary } from "./api";
+import DiffTheater from "./DiffTheater";
 
 // Deliberately the plainest possible version of the timeline: a single
 // <input type=range> playhead over events placed by timestamp, no canvas,
@@ -117,16 +118,11 @@ export default function App() {
               {active.tool_name === "Bash" ? (
                 <pre style={paneStyle}>{active.bash_output ?? "(no output)"}</pre>
               ) : (
-                <div style={{ display: "flex", gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={labelStyle}>before</div>
-                    <pre style={paneStyle}>{active.before_content ?? "(none)"}</pre>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={labelStyle}>after</div>
-                    <pre style={paneStyle}>{active.after_content ?? "(none)"}</pre>
-                  </div>
-                </div>
+                <DiffTheater
+                  before={active.before_content}
+                  after={active.after_content}
+                  eventKey={active.tool_use_id}
+                />
               )}
             </section>
           )}
@@ -144,11 +140,4 @@ const paneStyle: React.CSSProperties = {
   overflow: "auto",
   maxHeight: 400,
   whiteSpace: "pre-wrap",
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 11,
-  opacity: 0.6,
-  marginBottom: 4,
-  textTransform: "uppercase",
 };
