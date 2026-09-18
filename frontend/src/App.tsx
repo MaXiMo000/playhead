@@ -4,6 +4,7 @@ import DiffTheater from "./DiffTheater";
 import TimelineCanvas from "./TimelineCanvas";
 import TerminalStrip from "./TerminalStrip";
 import BlastRadiusMap from "./BlastRadiusMap";
+import SessionList from "./SessionList";
 
 function activeEventIndex(events: PlayheadEvent[], playheadTs: number): number {
   if (events.length === 0) return -1;
@@ -47,20 +48,7 @@ export default function App() {
       {error && <p style={{ color: "#f66" }}>{error}</p>}
 
       <section style={{ marginBottom: 24 }}>
-        <label>
-          Session:{" "}
-          <select
-            value={selectedSession ?? ""}
-            onChange={(e) => setSelectedSession(e.target.value || null)}
-          >
-            <option value="">-- pick a session --</option>
-            {sessions.map((s) => (
-              <option key={s.session_id} value={s.session_id}>
-                {s.session_id} ({s.event_count} events)
-              </option>
-            ))}
-          </select>
-        </label>
+        <SessionList sessions={sessions} selectedSession={selectedSession} onSelect={setSelectedSession} />
       </section>
 
       {events.length > 0 && (
@@ -84,6 +72,11 @@ export default function App() {
               </h2>
               <p style={{ fontSize: 12, opacity: 0.7 }}>
                 success: {String(active.tool_reported_success)}
+                {active.is_anomalous && (
+                  <span style={{ color: "#ff8800", marginLeft: 12 }}>
+                    ⚠ touched a file outside this session's working directory
+                  </span>
+                )}
               </p>
               {active.tool_name === "Bash" ? (
                 <pre style={paneStyle}>{active.bash_output ?? "(no output)"}</pre>

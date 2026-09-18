@@ -21,6 +21,7 @@ export interface PlayheadEvent {
   bash_command: string | null;
   bash_output: string | null;
   tool_reported_success: boolean | null;
+  is_anomalous: boolean;
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {

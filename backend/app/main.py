@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import models, schemas
+from .anomaly import is_out_of_scope
 from .database import Base, engine, get_db
 
 Base.metadata.create_all(bind=engine)
@@ -33,7 +34,10 @@ def create_event(event: schemas.EventIn, db: Session = Depends(get_db)):
     if existing is not None:
         return existing
 
-    row = models.Event(**event.model_dump())
+    row = models.Event(
+        **event.model_dump(),
+        is_anomalous=is_out_of_scope(event.cwd, event.file_path, event.tool_name),
+    )
     db.add(row)
     db.commit()
     db.refresh(row)

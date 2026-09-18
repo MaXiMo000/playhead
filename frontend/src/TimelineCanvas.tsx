@@ -16,6 +16,7 @@ interface Track {
 const TRACK_HEIGHT = 30;
 const LABEL_WIDTH = 170;
 const MIN_BLOCK_PX = 5;
+const RULER_HEIGHT = 16;
 const COLORS: Record<string, string> = {
   Edit: "#4a9eff",
   Write: "#b388ff",
@@ -70,7 +71,7 @@ export default function TimelineCanvas({ events, playheadTs, onScrub }: Props) {
   const maxTs = events[events.length - 1]?.ts_end ?? minTs + 1;
   const span = Math.max(maxTs - minTs, 0.001);
 
-  const height = tracks.length * TRACK_HEIGHT + 20;
+  const height = RULER_HEIGHT + tracks.length * TRACK_HEIGHT + 20;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -93,8 +94,25 @@ export default function TimelineCanvas({ events, playheadTs, onScrub }: Props) {
       const trackAreaWidth = cssWidth - LABEL_WIDTH;
       const tsToX = (ts: number) => LABEL_WIDTH + ((ts - minTs) / span) * trackAreaWidth;
 
+      // The ruler: a dedicated band above the tracks for anomaly spikes,
+      // in the register of an audio waveform's peak markers -- so an
+      // out-of-scope touch is something you notice on the ruler itself,
+      // not something you have to read off a tooltip.
+      ctx.fillStyle = "#141414";
+      ctx.fillRect(0, 0, cssWidth, RULER_HEIGHT);
+      for (const ev of events) {
+        if (!ev.is_anomalous) continue;
+        const x = tsToX(ev.ts_start);
+        ctx.strokeStyle = "#ff4444";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, RULER_HEIGHT);
+        ctx.lineTo(x, 2);
+        ctx.stroke();
+      }
+
       tracks.forEach((track, i) => {
-        const y = i * TRACK_HEIGHT + 10;
+        const y = RULER_HEIGHT + i * TRACK_HEIGHT + 10;
 
         ctx.fillStyle = i % 2 === 0 ? "#1c1c1c" : "#181818";
         ctx.fillRect(0, y, cssWidth, TRACK_HEIGHT);
@@ -117,7 +135,15 @@ export default function TimelineCanvas({ events, playheadTs, onScrub }: Props) {
           if (ev.tool_reported_success === false) {
             ctx.strokeStyle = "#ff4444";
             ctx.lineWidth = 2;
+            ctx.setLineDash([]);
             ctx.strokeRect(x0, y + 4, x1 - x0, TRACK_HEIGHT - 8);
+          }
+          if (ev.is_anomalous) {
+            ctx.strokeStyle = "#ff8800";
+            ctx.lineWidth = 2;
+            ctx.setLineDash([3, 2]);
+            ctx.strokeRect(x0, y + 4, x1 - x0, TRACK_HEIGHT - 8);
+            ctx.setLineDash([]);
           }
         }
       });
@@ -143,7 +169,7 @@ export default function TimelineCanvas({ events, playheadTs, onScrub }: Props) {
     const observer = new ResizeObserver(draw);
     observer.observe(container);
     return () => observer.disconnect();
-  }, [tracks, playheadTs, minTs, span, height]);
+  }, [tracks, events, playheadTs, minTs, span, height]);
 
   const xToTs = (clientX: number): number => {
     const canvas = canvasRef.current;

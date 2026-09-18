@@ -27,4 +27,8 @@ class Event(Base):
     bash_command: Mapped[str | None] = mapped_column(Text, nullable=True)
     bash_output: Mapped[str | None] = mapped_column(Text, nullable=True)
     tool_reported_success: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # Computed at ingestion time by anomaly.is_out_of_scope(), not derived
+    # on every read -- it depends only on cwd/file_path/tool_name, which
+    # never change after insert, so there's nothing to keep in sync.
+    is_anomalous: Mapped[bool] = mapped_column(Boolean, default=False)
     received_at: Mapped[object] = mapped_column(DateTime(timezone=True), server_default=func.now())
