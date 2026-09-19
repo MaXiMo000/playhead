@@ -1,30 +1,43 @@
 .session-list-search {
   width: 100%;
-  background: #1a1a1a;
-  border: 1px solid #333;
-  color: #eee;
-  padding: 6px 10px;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 12px;
-  margin-bottom: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  margin-bottom: 10px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.session-list-search::placeholder {
+  color: var(--text-faint);
+}
+
+.session-list-search:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .session-list {
-  max-height: 220px;
+  max-height: 240px;
   overflow-y: auto;
-  border: 1px solid #2a2a2a;
-  border-radius: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
 }
 
 .session-list-row {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 8px 12px;
+  padding: 11px 14px;
   cursor: pointer;
-  border-bottom: 1px solid #222;
-  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12.5px;
+  transition: background 0.12s ease;
+  position: relative;
 }
 
 .session-list-row:last-child {
@@ -32,30 +45,42 @@
 }
 
 .session-list-row:hover {
-  background: #1c1c1c;
+  background: var(--surface-2);
 }
 
 .session-list-row.selected {
-  background: #223a55;
+  background: linear-gradient(90deg, rgba(91, 157, 255, 0.16), rgba(91, 157, 255, 0.04));
+}
+
+.session-list-row.selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 .session-list-row-id {
-  font-weight: 600;
-  color: #ddd;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .session-list-row-meta {
-  color: #888;
+  color: var(--text-faint);
   font-size: 11px;
   flex-shrink: 0;
   margin-left: 12px;
 }
 
 .session-list-empty {
-  padding: 12px;
-  color: #666;
-  font-size: 12px;
+  padding: 14px;
+  color: var(--text-faint);
+  font-size: 12.5px;
 }

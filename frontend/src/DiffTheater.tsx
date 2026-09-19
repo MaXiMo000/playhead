@@ -27,9 +27,10 @@ export default function DiffTheater({ before, after, eventKey }: Props) {
   );
 
   return (
-    <div>
+    <div className="diff-theater-frame">
       <div className="diff-theater-controls">
-        <button onClick={() => setReplayNonce((n) => n + 1)}>Replay</button>
+        <span className="eyebrow">Diff theater</span>
+        <button onClick={() => setReplayNonce((n) => n + 1)}>↻ Replay</button>
       </div>
       <div className="diff-theater" key={`${eventKey}-${replayNonce}`}>
         {parts.map((part, i) => (

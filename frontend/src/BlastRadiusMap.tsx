@@ -11,11 +11,13 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 import type { PlayheadEvent } from "./api";
+import { COLORS } from "./TimelineCanvas";
 import "./BlastRadiusMap.css";
 
 interface GraphNode extends SimulationNodeDatum {
   id: string;
   label: string;
+  color: string;
 }
 
 type GraphLink = { source: string | GraphNode; target: string | GraphNode };
@@ -42,17 +44,23 @@ function shortLabel(key: string): string {
 // what did the agent touch right after this.
 function buildGraph(events: PlayheadEvent[]): { nodes: GraphNode[]; links: GraphLink[] } {
   const keys = new Set<string>();
+  const firstTool = new Map<string, string>();
   const links: GraphLink[] = [];
   let prevKey: string | null = null;
   for (const ev of events) {
     const key = nodeKeyFor(ev);
     keys.add(key);
+    if (!firstTool.has(key)) firstTool.set(key, ev.tool_name);
     if (prevKey && prevKey !== key) {
       links.push({ source: prevKey, target: key });
     }
     prevKey = key;
   }
-  const nodes: GraphNode[] = [...keys].map((key) => ({ id: key, label: shortLabel(key) }));
+  const nodes: GraphNode[] = [...keys].map((key) => ({
+    id: key,
+    label: shortLabel(key),
+    color: COLORS[firstTool.get(key) ?? ""] ?? "#8b93a7",
+  }));
 
   // A stable layout computed once up front -- this doesn't need to animate
   // live like a real-time force graph, it just needs a readable starting
@@ -88,7 +96,7 @@ function Edge({ from, to }: { from: [number, number, number]; to: [number, numbe
   );
   return (
     <line geometry={geometry}>
-      <lineBasicMaterial color="#555" />
+      <lineBasicMaterial color="#4a5470" transparent opacity={0.55} />
     </line>
   );
 }
@@ -96,7 +104,7 @@ function Edge({ from, to }: { from: [number, number, number]; to: [number, numbe
 // The signature moment: a ring of light expanding outward from whichever
 // file the playhead is currently on, looping continuously -- "what this
 // touched" felt as a pulse, not read off a static highlighted node.
-function PulseRing() {
+function PulseRing({ color }: { color: string }) {
   const ref = useRef<THREE.Mesh>(null);
   const startedAt = useRef(performance.now());
 
@@ -108,14 +116,42 @@ function PulseRing() {
     const scale = 0.4 + cycle * 3;
     mesh.scale.setScalar(scale);
     const material = mesh.material as THREE.MeshBasicMaterial;
-    material.opacity = Math.max(0, 1 - cycle / 1.4);
+    material.opacity = Math.max(0, 0.7 - cycle / 1.4);
   });
 
   return (
     <mesh ref={ref}>
       <ringGeometry args={[0.75, 1, 32]} />
-      <meshBasicMaterial color="#4a9eff" transparent opacity={0.6} side={THREE.DoubleSide} />
+      <meshBasicMaterial color={color} transparent opacity={0.6} side={THREE.DoubleSide} />
     </mesh>
+  );
+}
+
+function Node({ node, isActive }: { node: GraphNode; isActive: boolean }) {
+  return (
+    <group>
+      {/* Soft halo behind every node, brighter when active -- a cheap
+          stand-in for real bloom post-processing that reads well without
+          adding a render-pass dependency. */}
+      <mesh>
+        <sphereGeometry args={[isActive ? 0.85 : 0.5, 16, 16]} />
+        <meshBasicMaterial color={node.color} transparent opacity={isActive ? 0.16 : 0.07} depthWrite={false} />
+      </mesh>
+      <mesh>
+        <sphereGeometry args={[isActive ? 0.4 : 0.26, 24, 24]} />
+        <meshStandardMaterial
+          color={isActive ? "#ffffff" : node.color}
+          emissive={node.color}
+          emissiveIntensity={isActive ? 1.4 : 0.5}
+          roughness={0.35}
+          metalness={0.1}
+        />
+      </mesh>
+      {isActive && <PulseRing color={node.color} />}
+      <Html distanceFactor={12} style={{ pointerEvents: "none" }}>
+        <div className={`blast-node-label${isActive ? " blast-node-label-active" : ""}`}>{node.label}</div>
+      </Html>
+    </group>
   );
 }
 
@@ -144,9 +180,11 @@ export default function BlastRadiusMap({ events, playheadTs }: Props) {
 
   return (
     <div className="blast-radius-map">
-      <Canvas camera={{ position: [0, 0, 14], fov: 50 }} gl={{ preserveDrawingBuffer: true }}>
-        <ambientLight intensity={0.9} />
-        <pointLight position={[5, 5, 8]} intensity={0.7} />
+      <Canvas camera={{ position: [0, 0, 14], fov: 50 }} gl={{ preserveDrawingBuffer: true, antialias: true }}>
+        <fog attach="fog" args={["#0a0c11", 12, 26]} />
+        <ambientLight intensity={0.55} />
+        <pointLight position={[5, 5, 8]} intensity={0.9} color="#8fb8ff" />
+        <pointLight position={[-6, -4, 6]} intensity={0.35} color="#a78bfa" />
 
         {links.map((l) => {
           const a = positions.get(typeof l.source === "string" ? l.source : l.source.id);
@@ -157,36 +195,15 @@ export default function BlastRadiusMap({ events, playheadTs }: Props) {
 
         {nodes.map((n) => {
           const pos = positions.get(n.id)!;
-          const isActive = n.id === activeKey;
           return (
             <group key={n.id} position={pos}>
-              <mesh>
-                <sphereGeometry args={[isActive ? 0.4 : 0.25, 16, 16]} />
-                <meshStandardMaterial
-                  color={isActive ? "#ffffff" : "#4a9eff"}
-                  emissive={isActive ? "#4a9eff" : "#000000"}
-                  emissiveIntensity={isActive ? 1.2 : 0}
-                />
-              </mesh>
-              {isActive && <PulseRing />}
-              <Html distanceFactor={12} style={htmlLabelStyle}>
-                {n.label}
-              </Html>
+              <Node node={n} isActive={n.id === activeKey} />
             </group>
           );
         })}
 
-        <OrbitControls enablePan enableZoom enableRotate />
+        <OrbitControls enablePan enableZoom enableRotate autoRotate autoRotateSpeed={0.4} />
       </Canvas>
     </div>
   );
 }
-
-const htmlLabelStyle: React.CSSProperties = {
-  color: "#ccc",
-  fontSize: 11,
-  fontFamily: "ui-monospace, monospace",
-  whiteSpace: "nowrap",
-  pointerEvents: "none",
-  transform: "translateY(14px)",
-};

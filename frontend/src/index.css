@@ -1,6 +1,39 @@
 :root {
   color-scheme: dark;
-  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+
+  /* Surfaces -- a blue-tinted near-black, not flat grey, with three levels
+     of elevation so cards read as raised rather than painted on. */
+  --bg: #0a0c11;
+  --bg-gradient: radial-gradient(ellipse 1200px 600px at 50% -10%, #10151f 0%, #0a0c11 60%);
+  --surface: #12151c;
+  --surface-2: #171b24;
+  --surface-3: #1d222d;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --text: #e9ebf1;
+  --text-dim: #9aa2b6;
+  --text-faint: #5c6479;
+
+  /* Accents */
+  --accent: #5b9dff;
+  --accent-glow: rgba(91, 157, 255, 0.45);
+  --write: #a78bfa;
+  --shell: #f5a962;
+  --success: #4ade80;
+  --warning: #fb923c;
+  --danger: #f87171;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.03) inset;
+
+  --font-ui: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+
+  font-family: var(--font-ui);
 }
 
 * {
@@ -9,6 +42,40 @@
 
 body {
   margin: 0;
-  background: #111;
-  color: #eee;
+  background: var(--bg-gradient) fixed;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-glow);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 8px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }

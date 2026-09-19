@@ -19,23 +19,33 @@ export default function TerminalStrip({ events, playheadTs }: Props) {
     else break; // events arrive pre-ordered by ts_start from the API
   }
 
-  if (!current) {
-    return <div className="terminal-strip terminal-strip-empty">$ (no shell command reached yet)</div>;
-  }
-
-  const duration = Math.max(current.ts_end - current.ts_start, 0.001);
-  const fraction = Math.min(Math.max((playheadTs - current.ts_start) / duration, 0), 1);
-  const output = current.bash_output ?? "";
+  const duration = current ? Math.max(current.ts_end - current.ts_start, 0.001) : 1;
+  const fraction = current ? Math.min(Math.max((playheadTs - current.ts_start) / duration, 0), 1) : 0;
+  const output = current?.bash_output ?? "";
   const revealed = output.slice(0, Math.floor(output.length * fraction));
   const stillPlaying = fraction < 1;
 
   return (
-    <div className="terminal-strip">
-      <span className="terminal-strip-prompt">$ </span>
-      {current.bash_command}
-      {"\n"}
-      {revealed}
-      {stillPlaying && <span className="terminal-strip-cursor" />}
+    <div className="terminal-window">
+      <div className="terminal-titlebar">
+        <span className="terminal-dot terminal-dot-red" />
+        <span className="terminal-dot terminal-dot-yellow" />
+        <span className="terminal-dot terminal-dot-green" />
+        <span className="terminal-titlebar-label">shell</span>
+      </div>
+      <div className="terminal-body">
+        {current ? (
+          <>
+            <span className="terminal-prompt">➜ </span>
+            {current.bash_command}
+            {"\n"}
+            {revealed}
+            {stillPlaying && <span className="terminal-cursor" />}
+          </>
+        ) : (
+          <span className="terminal-empty">$ waiting for a shell command...</span>
+        )}
+      </div>
     </div>
   );
 }

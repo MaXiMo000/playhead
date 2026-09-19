@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchSessionEvents, fetchSessions, type PlayheadEvent, type SessionSummary } from "./api";
 import DiffTheater from "./DiffTheater";
-import TimelineCanvas from "./TimelineCanvas";
+import TimelineCanvas, { COLORS } from "./TimelineCanvas";
 import TerminalStrip from "./TerminalStrip";
 import BlastRadiusMap from "./BlastRadiusMap";
 import SessionList from "./SessionList";
+import "./App.css";
 
 function activeEventIndex(events: PlayheadEvent[], playheadTs: number): number {
   if (events.length === 0) return -1;
@@ -42,51 +43,77 @@ export default function App() {
   const active = activeIdx >= 0 ? events[activeIdx] : null;
 
   return (
-    <div style={{ padding: 24, maxWidth: 1100, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 20 }}>Playhead</h1>
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="app-logo">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M6 4L20 12L6 20V4Z" fill="white" />
+          </svg>
+        </div>
+        <div className="app-title-block">
+          <h1 className="app-title">Playhead</h1>
+          <span className="app-subtitle">Replay and audit trail for AI coding agents</span>
+        </div>
+      </header>
 
-      {error && <p style={{ color: "#f66" }}>{error}</p>}
+      {error && <div className="app-error">{error}</div>}
 
-      <section style={{ marginBottom: 24 }}>
-        <SessionList sessions={sessions} selectedSession={selectedSession} onSelect={setSelectedSession} />
+      <section className="app-section">
+        <div className="card section-card">
+          <div className="section-heading">
+            <span className="eyebrow">Sessions</span>
+          </div>
+          <SessionList sessions={sessions} selectedSession={selectedSession} onSelect={setSelectedSession} />
+        </div>
       </section>
 
       {events.length > 0 && (
         <>
-          <section style={{ marginBottom: 16 }}>
-            <TimelineCanvas events={events} playheadTs={playheadTs} onScrub={setPlayheadTs} />
+          <section className="app-section">
+            <div className="card section-card">
+              <div className="section-heading">
+                <span className="eyebrow">Timeline</span>
+              </div>
+              <TimelineCanvas events={events} playheadTs={playheadTs} onScrub={setPlayheadTs} />
+            </div>
           </section>
 
-          <section style={{ marginBottom: 24 }}>
+          <section className="app-section">
             <TerminalStrip events={events} playheadTs={playheadTs} />
           </section>
 
-          <section style={{ marginBottom: 24 }}>
+          <section className="app-section">
             <BlastRadiusMap events={events} playheadTs={playheadTs} />
           </section>
 
           {active && (
-            <section>
-              <h2 style={{ fontSize: 14 }}>
-                {active.tool_name} — {active.file_path ?? active.bash_command}
-              </h2>
-              <p style={{ fontSize: 12, opacity: 0.7 }}>
-                success: {String(active.tool_reported_success)}
-                {active.is_anomalous && (
-                  <span style={{ color: "#ff8800", marginLeft: 12 }}>
-                    ⚠ touched a file outside this session's working directory
+            <section className="app-section">
+              <div className="card section-card">
+                <div className="detail-header">
+                  <span
+                    className="detail-icon"
+                    style={{ background: COLORS[active.tool_name] ?? "#8b93a7" }}
+                  />
+                  <span className="detail-path">
+                    {active.tool_name} — {active.file_path ?? active.bash_command}
                   </span>
+                  {active.tool_reported_success === true && <span className="pill pill-success">success</span>}
+                  {active.tool_reported_success === false && <span className="pill pill-fail">failed</span>}
+                  {active.tool_reported_success === null && <span className="pill pill-unverified">unverified</span>}
+                  {active.is_anomalous && (
+                    <span className="pill pill-anomaly">⚠ outside working directory</span>
+                  )}
+                </div>
+                {active.tool_name === "Bash" ? (
+                  <pre className="bash-output-pane">{active.bash_output ?? "(no output)"}</pre>
+                ) : (
+                  <DiffTheater
+                    before={active.before_content}
+                    after={active.after_content}
+                    eventKey={active.tool_use_id}
+                  />
                 )}
-              </p>
-              {active.tool_name === "Bash" ? (
-                <pre style={paneStyle}>{active.bash_output ?? "(no output)"}</pre>
-              ) : (
-                <DiffTheater
-                  before={active.before_content}
-                  after={active.after_content}
-                  eventKey={active.tool_use_id}
-                />
-              )}
+              </div>
             </section>
           )}
         </>
@@ -94,13 +121,3 @@ export default function App() {
     </div>
   );
 }
-
-const paneStyle: React.CSSProperties = {
-  background: "#1a1a1a",
-  padding: 12,
-  borderRadius: 4,
-  fontSize: 12,
-  overflow: "auto",
-  maxHeight: 400,
-  whiteSpace: "pre-wrap",
-};
