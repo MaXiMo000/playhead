@@ -24,7 +24,7 @@ def _sent_dir(cwd: str) -> pathlib.Path:
     return pathlib.Path(cwd) / ".playhead" / "sent"
 
 
-def sync_once(cwd: str, api_url: str) -> tuple[int, int]:
+def sync_once(cwd: str, api_url: str, api_key: str | None = None) -> tuple[int, int]:
     """Uploads every event file in `.playhead/events/`, moving each to
     `.playhead/sent/` on a 2xx response. Returns (sent_count, failed_count).
     A file that fails to upload is left in place -- the next run retries it,
@@ -35,11 +35,12 @@ def sync_once(cwd: str, api_url: str) -> tuple[int, int]:
 
     sent_dir = _sent_dir(cwd)
     sent, failed = 0, 0
+    headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
 
     for event_path in sorted(events_dir.glob("*.json")):
         try:
             payload = json.loads(event_path.read_text())
-            response = requests.post(f"{api_url}/events", json=payload, timeout=10)
+            response = requests.post(f"{api_url}/events", json=payload, headers=headers, timeout=10)
             response.raise_for_status()
         except (requests.RequestException, json.JSONDecodeError) as exc:
             sys.stderr.write(f"playhead-sync: failed to send {event_path.name}: {exc}\n")
@@ -56,7 +57,8 @@ def sync_once(cwd: str, api_url: str) -> tuple[int, int]:
 def main() -> int:
     cwd = os.getcwd()
     api_url = os.environ.get("PLAYHEAD_API_URL", DEFAULT_API_URL)
-    sent, failed = sync_once(cwd, api_url)
+    api_key = os.environ.get("PLAYHEAD_API_KEY")
+    sent, failed = sync_once(cwd, api_url, api_key)
     print(f"playhead-sync: {sent} event(s) sent, {failed} failed")
     return 1 if failed else 0
 

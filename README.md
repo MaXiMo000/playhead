@@ -49,14 +49,29 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 - **Multi-session view — done.** `frontend/src/SessionList.tsx` replaces the plain `<select>` with a searchable, metadata-rich list (event count, start time, duration). Verified live with three seeded sessions: search filtering and row-click selection both confirmed working.
 - **All originally planned build-order steps are now implemented and the hook is confirmed live-firing end-to-end.** The one still-open item is confirming the blast-radius map's pixel rendering in a real browser (flagged above).
 
+## Security
+
+This is a single-user personal tool, not a multi-tenant product, and the security posture below is sized to that threat model, not to "assume this gets deployed publicly to strangers."
+
+- **API key auth** (`backend/app/security.py`): every endpoint except `/health` requires `Authorization: Bearer <PLAYHEAD_API_KEY>` once that env var is set. If it's unset, the server runs open and prints a loud warning at startup — that's the localhost-demo case, not a silent default. The same key must be set for `playhead-sync` (`PLAYHEAD_API_KEY`) and the frontend (`VITE_API_KEY`) or every request 401s. **Honestly stated limitation**: the key ships inside the built frontend bundle, readable by anyone who loads the page — there is no login system here, so this stops opportunistic bots/scanners hitting an exposed API, not a targeted attacker who reads the bundle. Real multi-user auth is out of scope for what this project is.
+- **CORS is a real allowlist**, not `*` — `ALLOWED_ORIGINS` (comma-separated), defaulting to the local Vite ports only.
+- **Rate limiting** (`slowapi`): 60/minute on `POST /events`. Verified live: 65 rapid requests returned exactly 60×`201` then 5×`429`.
+- **Request body size cap**: 5MB, checked via `Content-Length` before the body is read. Verified live: a request declaring a 6MB body gets `413` immediately.
+- **Security headers** (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`) on every response.
+- **SQLite has no encryption at rest, and that is not fixed here.** Tried `sqlcipher3-binary` for this — no wheel exists for this platform, and this project isn't going to ship a fragile from-source build just to check a box. The honest fix: use Postgres (`DATABASE_URL`) for anything beyond solo local use — a managed provider gives you encryption at rest and TLS in transit for free, which is a better answer than a brittle local dependency.
+- **Already fine, no changes needed**: no XSS risk (React escapes all rendered text; nothing here uses `dangerouslySetInnerHTML`), no SQL injection risk (SQLAlchemy ORM, no raw string-built queries anywhere).
+
 ### Running the backend locally
 
 ```
 cd backend
 python -m venv .venv && .venv/Scripts/activate  # or source .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env   # fill in PLAYHEAD_API_KEY to lock the API down; leave blank to run open for local dev
 uvicorn app.main:app --reload
 ```
+
+The frontend needs the same key: `cp frontend/.env.example frontend/.env.local` and set `VITE_API_KEY` to match. `playhead-sync` needs `PLAYHEAD_API_KEY` set in its own environment too.
 
 ### Installing the hook
 

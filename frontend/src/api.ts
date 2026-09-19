@@ -1,4 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API_KEY = import.meta.env.VITE_API_KEY as string | undefined;
+
+// Sent on every request when configured. Note this key ships inside the
+// built frontend bundle -- readable by anyone who loads the page -- which
+// is why it's a proportionate mitigation for a single-user personal tool
+// (stops opportunistic bots/scanners hitting an exposed API), not real
+// authentication for a multi-user product. See backend/app/security.py.
+function authHeaders(): HeadersInit {
+  return API_KEY ? { Authorization: `Bearer ${API_KEY}` } : {};
+}
 
 export interface SessionSummary {
   session_id: string;
@@ -25,13 +35,15 @@ export interface PlayheadEvent {
 }
 
 export async function fetchSessions(): Promise<SessionSummary[]> {
-  const res = await fetch(`${API_URL}/sessions`);
+  const res = await fetch(`${API_URL}/sessions`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`GET /sessions failed: ${res.status}`);
   return res.json();
 }
 
 export async function fetchSessionEvents(sessionId: string): Promise<PlayheadEvent[]> {
-  const res = await fetch(`${API_URL}/sessions/${encodeURIComponent(sessionId)}/events`);
+  const res = await fetch(`${API_URL}/sessions/${encodeURIComponent(sessionId)}/events`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) throw new Error(`GET /sessions/${sessionId}/events failed: ${res.status}`);
   return res.json();
 }
