@@ -94,10 +94,13 @@ function Edge({ from, to }: { from: [number, number, number]; to: [number, numbe
     () => new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...from), new THREE.Vector3(...to)]),
     [from, to],
   );
+  // <lineSegments>, not <line>: JSX resolves `line` to the SVG element's
+  // types, which have no `geometry`, and `tsc -b` fails the build. A
+  // two-point segment draws exactly the same edge.
   return (
-    <line geometry={geometry}>
+    <lineSegments geometry={geometry}>
       <lineBasicMaterial color="#4a5470" transparent opacity={0.55} />
-    </line>
+    </lineSegments>
   );
 }
 
@@ -106,12 +109,13 @@ function Edge({ from, to }: { from: [number, number, number]; to: [number, numbe
 // touched" felt as a pulse, not read off a static highlighted node.
 function PulseRing({ color }: { color: string }) {
   const ref = useRef<THREE.Mesh>(null);
-  const startedAt = useRef(performance.now());
+  const startedAt = useRef<number | null>(null);
 
-  useFrame(() => {
+  useFrame(({ clock }) => {
     const mesh = ref.current;
     if (!mesh) return;
-    const elapsed = (performance.now() - startedAt.current) / 1000;
+    startedAt.current ??= clock.elapsedTime;
+    const elapsed = clock.elapsedTime - startedAt.current;
     const cycle = elapsed % 1.4;
     const scale = 0.4 + cycle * 3;
     mesh.scale.setScalar(scale);
