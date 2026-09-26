@@ -164,6 +164,10 @@ interface Props {
   playheadTs: number;
 }
 
+// Leaves room for a label (~1.8 units) beside the outermost node even in a
+// panel narrower than it is tall, where the horizontal view is the tighter one.
+const FIT_RADIUS = 3.4;
+
 export default function BlastRadiusMap({ events, playheadTs }: Props) {
   const { nodes, links } = useMemo(() => buildGraph(events), [events]);
 
@@ -177,8 +181,15 @@ export default function BlastRadiusMap({ events, playheadTs }: Props) {
   }, [events, playheadTs]);
 
   const positions = useMemo(() => {
+    // Shrink (never enlarge) the layout so its farthest node sits inside
+    // FIT_RADIUS: the camera frames about 6.5 units either side at this
+    // distance and fov, which leaves room for labels at any auto-rotate
+    // angle. A fixed 0.35 scale let a larger session's outer nodes and
+    // their labels fall off the edge of the panel.
+    const reach = Math.max(0, ...nodes.map((n) => Math.hypot(n.x ?? 0, n.y ?? 0)));
+    const scale = reach > 0 ? Math.min(0.35, FIT_RADIUS / reach) : 0.35;
     const map = new Map<string, [number, number, number]>();
-    for (const n of nodes) map.set(n.id, [(n.x ?? 0) * 0.35, (n.y ?? 0) * 0.35, 0]);
+    for (const n of nodes) map.set(n.id, [(n.x ?? 0) * scale, (n.y ?? 0) * scale, 0]);
     return map;
   }, [nodes]);
 

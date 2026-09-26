@@ -29,15 +29,29 @@
 }
 
 .session-list-row {
+  /* The id on its own line above the metadata: side by side in a narrow
+     sidebar, the metadata refused to shrink and the id became "de...". */
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
   padding: 11px 14px;
   cursor: pointer;
+  border: none;
   border-bottom: 1px solid var(--border);
+  background: none;
+  color: inherit;
+  font: inherit;
   font-size: 12.5px;
+  text-align: left;
   transition: background 0.12s ease;
   position: relative;
+}
+
+.session-list-row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 .session-list-row:last-child {
@@ -64,19 +78,19 @@
 }
 
 .session-list-row-id {
+  /* Wraps rather than truncating: the id is what people scan for, and
+     session ids are often long ("refactor-auth-and-billing-2026-09-26"). */
+  display: block;
+  max-width: 100%;
   font-family: var(--font-mono);
   font-weight: 500;
   color: var(--text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .session-list-row-meta {
   color: var(--text-faint);
   font-size: 11px;
-  flex-shrink: 0;
-  margin-left: 12px;
 }
 
 .session-list-empty {
