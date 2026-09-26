@@ -30,15 +30,23 @@ export default function SessionList({ sessions, selectedSession, onSelect }: Pro
     <div>
       <input
         className="session-list-search"
+        type="search"
+        aria-label="Search sessions"
         placeholder="Search sessions..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <div className="session-list">
+      {/* Real buttons, not clickable divs: reachable with Tab, selectable
+          with Enter/Space, and announced as the selected one by a screen
+          reader. */}
+      <div className="session-list" role="group" aria-label="Sessions">
         {filtered.length === 0 && <div className="session-list-empty">No sessions match.</div>}
         {filtered.map((s) => (
-          <div
+          <button
+            type="button"
             key={s.session_id}
+            aria-pressed={s.session_id === selectedSession}
+            title={s.session_id}
             className={`session-list-row${s.session_id === selectedSession ? " selected" : ""}`}
             onClick={() => onSelect(s.session_id)}
           >
@@ -47,7 +55,7 @@ export default function SessionList({ sessions, selectedSession, onSelect }: Pro
               {new Date(s.started_at * 1000).toLocaleString()} · {s.event_count} events ·{" "}
               {formatDuration(s.ended_at - s.started_at)}
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
