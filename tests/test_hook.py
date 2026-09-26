@@ -79,6 +79,16 @@ class TestBashRoundTrip(unittest.TestCase):
             self.assertEqual(event["bash_command"], "pytest -q")
             self.assertEqual(event["bash_output"], "3 passed\n")
 
+    def test_powershell_keeps_its_own_name(self):
+        with tempfile.TemporaryDirectory() as cwd:
+            for kind, extra in (("PreToolUse", {"tool_input": {"command": "Get-Date"}}),
+                                ("PostToolUse", {"tool_response": {"stdout": "today", "stderr": ""}})):
+                handler = hook.pre_tool_use if kind == "PreToolUse" else hook.post_tool_use
+                handler({"hook_event_name": kind, "tool_name": "PowerShell", "tool_use_id": "toolu_ps",
+                         "session_id": "sess_1", "cwd": cwd, **extra})
+            event = json.loads((pathlib.Path(cwd) / ".playhead" / "events" / "toolu_ps.json").read_text())
+            self.assertEqual((event["tool_name"], event["bash_command"]), ("PowerShell", "Get-Date"))
+
 
 class TestUnwatchedToolsAreIgnored(unittest.TestCase):
     def test_read_tool_writes_nothing(self):

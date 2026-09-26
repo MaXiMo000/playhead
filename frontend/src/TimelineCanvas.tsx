@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import type { PlayheadEvent } from "./api";
+import { isShell, type PlayheadEvent } from "./api";
 import "./TimelineCanvas.css";
 
 interface Props {
@@ -32,7 +32,7 @@ const GRID_LINE = "rgba(255,255,255,0.045)";
 const RULER_BG = "#0e1015";
 
 function trackKeyFor(ev: PlayheadEvent): string {
-  if (ev.tool_name === "Bash") return "\0shell"; // sorts last, deliberately
+  if (isShell(ev)) return "\0shell"; // sorts last, deliberately
   return ev.file_path ?? "\0other";
 }
 

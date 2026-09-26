@@ -17,6 +17,10 @@ export interface SessionSummary {
   ended_at: number;
 }
 
+// Claude Code's two shell tools: same command in, same stdout/stderr out.
+export const isShell = (ev: { tool_name: string }) =>
+  ev.tool_name === "Bash" || ev.tool_name === "PowerShell";
+
 export interface PlayheadEvent {
   id: number;
   session_id: string | null;

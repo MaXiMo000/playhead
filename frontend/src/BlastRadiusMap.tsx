@@ -10,7 +10,7 @@ import {
   forceCollide,
   type SimulationNodeDatum,
 } from "d3-force";
-import type { PlayheadEvent } from "./api";
+import { isShell, type PlayheadEvent } from "./api";
 import { COLORS } from "./TimelineCanvas";
 import "./BlastRadiusMap.css";
 
@@ -27,7 +27,7 @@ type GraphLink = { source: string | GraphNode; target: string | GraphNode };
 // still a real step in the sequence a "what did this touch next" map needs
 // to show.
 function nodeKeyFor(ev: PlayheadEvent): string {
-  return ev.tool_name === "Bash" ? "\0shell" : (ev.file_path ?? "\0other");
+  return isShell(ev) ? "\0shell" : (ev.file_path ?? "\0other");
 }
 
 function shortLabel(key: string): string {

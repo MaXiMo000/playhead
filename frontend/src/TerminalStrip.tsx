@@ -1,5 +1,5 @@
 import "./TerminalStrip.css";
-import type { PlayheadEvent } from "./api";
+import { isShell, type PlayheadEvent } from "./api";
 
 interface Props {
   events: PlayheadEvent[];
@@ -11,7 +11,7 @@ interface Props {
 // progressively reveals, asciinema-style, instead of dumping the whole
 // command output the instant you touch its block.
 export default function TerminalStrip({ events, playheadTs }: Props) {
-  const bashEvents = events.filter((e) => e.tool_name === "Bash");
+  const bashEvents = events.filter(isShell);
 
   let current: PlayheadEvent | null = null;
   for (const ev of bashEvents) {

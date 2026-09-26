@@ -26,7 +26,8 @@ import sys
 
 from .core import MAX_CONTENT_BYTES
 
-TOOLS = {"Edit", "Write", "MultiEdit", "Bash"}
+SHELLS = {"Bash", "PowerShell"}
+TOOLS = {"Edit", "Write", "MultiEdit"} | SHELLS
 
 
 def _ts(value) -> float | None:
@@ -102,7 +103,7 @@ def events_from_transcript(lines) -> list[dict]:
             "file_path": None, "before_content": None, "after_content": None,
             "bash_command": None, "bash_output": None, "tool_reported_success": success,
         }
-        if name == "Bash":
+        if name in SHELLS:
             event["bash_command"] = inputs.get("command")
             output = "\n".join(p for p in (tur.get("stdout"), tur.get("stderr")) if p) or None
             event["bash_output"] = _cap(output)

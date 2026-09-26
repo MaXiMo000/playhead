@@ -10,10 +10,10 @@ Teams adopting Claude Code, Cursor, and Copilot at scale have no good way to ans
 
 The whole app is built around a horizontal multi-track timeline with a draggable playhead, like Premiere or Ableton, instead of a table of log rows.
 
-- Each **track** = one file touched during a session. Each **block** on the track = one Edit/Write/Bash event, colored by type.
+- Each **track** = one file touched during a session. Each **block** on the track = one Edit/Write/Bash/PowerShell event, colored by type.
 - Dragging the playhead scrubs a **diff theater** pane that morphs the file text character-by-character between before/after states as you move — not a static red/green diff, an animated transition, so you watch the edit happen rather than read two blocks of text.
 - A **radial blast-radius map** beside the timeline replaces the usual sidebar file tree: a small force-directed graph where a pulse of light radiates outward from whichever file is active at the current playhead position, showing what it touched next.
-- Bash commands play back in a synced **terminal-replay strip** beneath the tracks (asciinema-style), scrubbing in lockstep with the playhead.
+- Shell commands (Bash and PowerShell) play back in a synced **terminal-replay strip** beneath the tracks (asciinema-style), scrubbing in lockstep with the playhead.
 - Anomalies (agent touched a file with no relation to the stated task, or outside the declared working directory) show up as a **red spike on the timeline ruler itself** — like an audio waveform peak — so you spot the outlier visually before reading anything.
 
 **Why this is unique:** the interaction model is borrowed from video/audio editing, not from analytics dashboards or log viewers. It also makes for a far better demo — a 20-second recording of dragging the playhead through a real session beats any screenshot of a table.
@@ -21,7 +21,7 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 ## Try it on a session you already had
 
 No hook needed: every Claude Code session is already saved as a
-transcript, and `playhead-import` rebuilds its Edit/Write/Bash timeline
+transcript, and `playhead-import` rebuilds its Edit/Write/Bash/PowerShell timeline
 from that.
 
 ```bash

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { fetchSessionEvents, fetchSessions, type PlayheadEvent, type SessionSummary } from "./api";
+import { fetchSessionEvents, fetchSessions, isShell, type PlayheadEvent, type SessionSummary } from "./api";
 import DiffTheater from "./DiffTheater";
 import TimelineCanvas, { COLORS } from "./TimelineCanvas";
 import TerminalStrip from "./TerminalStrip";
@@ -103,7 +103,7 @@ export default function App() {
                           <span className="pill pill-anomaly">⚠ outside working directory</span>
                         )}
                       </div>
-                      {active.tool_name === "Bash" ? (
+                      {isShell(active) ? (
                         <pre className="bash-output-pane">{active.bash_output ?? "(no output)"}</pre>
                       ) : (
                         <DiffTheater

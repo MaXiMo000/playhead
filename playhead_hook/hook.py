@@ -20,7 +20,10 @@ import time
 
 from . import core
 
-WATCHED_TOOLS = {"Edit", "Write", "Bash"}
+# PowerShell is Claude Code's other shell tool, same input and output as
+# Bash; 147 of the calls in one Windows machine's transcripts.
+SHELLS = {"Bash", "PowerShell"}
+WATCHED_TOOLS = {"Edit", "Write"} | SHELLS
 
 
 def _state_dir(cwd: str) -> pathlib.Path:
@@ -47,10 +50,10 @@ def pre_tool_use(event: dict) -> None:
             "before_content": core.read_file_text(file_path),
             "session_id": session_id, "cwd": cwd, "ts_start": ts_start,
         }
-    else:  # Bash
+    else:  # a shell
         command = event.get("tool_input", {}).get("command")
         state = {
-            "tool_name": "Bash", "command": command,
+            "tool_name": tool_name, "command": command,
             "session_id": session_id, "cwd": cwd, "ts_start": ts_start,
         }
 
@@ -86,9 +89,9 @@ def post_tool_use(event: dict) -> None:
             session_id=state["session_id"], cwd=state["cwd"],
             ts_start=state["ts_start"], ts_end=ts_end, tool_response=tool_response,
         )
-    else:  # Bash
+    else:  # a shell
         result = core.build_bash_event(
-            command=state["command"], tool_use_id=tool_use_id,
+            command=state["command"], tool_use_id=tool_use_id, tool_name=state["tool_name"],
             session_id=state["session_id"], cwd=state["cwd"],
             ts_start=state["ts_start"], ts_end=ts_end, tool_response=tool_response,
         )
