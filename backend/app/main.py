@@ -41,24 +41,57 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/events", response_model=schemas.EventOut, status_code=201, dependencies=[Depends(verify_api_key)])
-@limiter.limit("60/minute")
-def create_event(request: Request, event: schemas.EventIn, db: Session = Depends(get_db)):
-    # playhead-sync retries a file that failed to upload, so the same
-    # tool_use_id can arrive twice -- this must be safe to call again with
-    # the same event, returning the existing row rather than erroring.
+def _store(event: schemas.EventIn, db: Session) -> tuple[models.Event, bool]:
+    """(row, created). Idempotent on tool_use_id: playhead-sync retries a
+    file that failed to upload, and playhead-import can replay a session
+    twice, so the same event arriving again returns the existing row."""
     existing = db.scalar(select(models.Event).where(models.Event.tool_use_id == event.tool_use_id))
     if existing is not None:
-        return existing
-
+        return existing, False
     row = models.Event(
         **event.model_dump(),
         is_anomalous=is_out_of_scope(event.cwd, event.file_path, event.tool_name),
     )
     db.add(row)
+    return row, True
+
+
+@app.post("/events", response_model=schemas.EventOut, status_code=201, dependencies=[Depends(verify_api_key)])
+@limiter.limit("60/minute")
+def create_event(request: Request, event: schemas.EventIn, db: Session = Depends(get_db)):
+    row, _ = _store(event, db)
     db.commit()
     db.refresh(row)
     return row
+
+
+MAX_BATCH = 100
+
+
+@app.post("/events/batch", status_code=201, dependencies=[Depends(verify_api_key)])
+@limiter.limit("60/minute")
+def create_events(request: Request, events: list[schemas.EventIn], db: Session = Depends(get_db)):
+    """Up to MAX_BATCH events in one request, still under the 5MB body cap
+    and the same rate limit. One event per request made importing a real
+    session (hundreds of tool calls) take minutes at 60/minute."""
+    if len(events) > MAX_BATCH:
+        raise HTTPException(status_code=413, detail=f"at most {MAX_BATCH} events per batch")
+    # One query for which ids already exist, one insert for the rest -- not a
+    # lookup and flush per event, which took 1m41s for a 544-event session.
+    ids = [e.tool_use_id for e in events]
+    seen = set(db.scalars(select(models.Event.tool_use_id).where(models.Event.tool_use_id.in_(ids))))
+    rows = []
+    for event in events:
+        if event.tool_use_id in seen:
+            continue
+        seen.add(event.tool_use_id)  # a repeated id inside one batch is inserted once
+        rows.append(models.Event(
+            **event.model_dump(),
+            is_anomalous=is_out_of_scope(event.cwd, event.file_path, event.tool_name),
+        ))
+    db.add_all(rows)
+    db.commit()
+    return {"created": len(rows), "existing": len(events) - len(rows)}
 
 
 @app.get("/sessions", response_model=list[schemas.SessionSummary], dependencies=[Depends(verify_api_key)])

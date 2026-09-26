@@ -18,6 +18,32 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 
 **Why this is unique:** the interaction model is borrowed from video/audio editing, not from analytics dashboards or log viewers. It also makes for a far better demo — a 20-second recording of dragging the playhead through a real session beats any screenshot of a table.
 
+## Try it on a session you already had
+
+No hook needed: every Claude Code session is already saved as a
+transcript, and `playhead-import` rebuilds its Edit/Write/Bash timeline
+from that.
+
+```bash
+pip install -e .                                   # playhead-hook, playhead-sync, playhead-import
+cd backend && uvicorn app.main:app --port 8000 &    # the API (SQLite by default)
+cd frontend && npm install && npm run dev           # the timeline UI
+
+cd ~/code/your-project
+playhead-import --latest --sync                    # this project's most recent session
+playhead-import --all --sync                       # or every session it has had
+```
+
+It reads `~/.claude/projects/<project>/<session>.jsonl`: each tool call's
+inputs, timestamps and result -- including the file's content before an
+Edit, which is what the diff theater replays. Importing the same session
+twice changes nothing. Measured on real sessions here: 544 events
+imported with none failing, 474 in 7.7 seconds.
+
+What a transcript can't give is the file on disk *after* the call, so the
+after-content is what the tool reported writing. Install the hook (below)
+to record sessions live instead, with the real bytes read back from disk.
+
 ## Architecture
 
 - **Ingestion:** a Claude Code hook fires on every Edit/Write/Bash tool call, posts a structured event `{session_id, ts, tool, file, before, after, cwd, cmd}` to an ingestion API. Support Cursor/Copilot later via the same event schema.
@@ -38,6 +64,7 @@ The whole app is built around a horizontal multi-track timeline with a draggable
 
 ## Status
 
+- **Session import — done.** `playhead-import` (`playhead_hook/transcript.py`) rebuilds events from Claude Code transcripts; the backend takes them 100 at a time on `POST /events/batch` (one query for existing ids, one insert), so a real session imports in seconds instead of minutes at the 60-requests-a-minute limit. Tested against real transcript shapes and run on three real sessions.
 - **Step 1-4 (hook package) — done.** `playhead_hook/` (`core.py` pure event-shaping, `hook.py` stdin/stdout glue, `sync.py` uploader) is built, unit-tested (`tests/`), installed in editable mode, and smoke-tested end-to-end via the real `playhead-hook`/`playhead-sync` console scripts piped real doc-shaped JSON — not just in-process. `.claude/settings.json` registers it.
 - **Step 5 (validate the hook fires live) — done, root cause found and fixed.** It was never the "session root" concern custody's README speculated about — it was simpler: `.claude/settings.json` invokes the bare command `playhead-hook`, which only resolves if something is actually on `PATH`, and a project-local `.venv` never is. Confirmed live in a real Claude Code session: a real `Write` call with only the local `.venv` installed produced no `.playhead/events/` file at all. Fix: `pip install -e .` into the global/regular Python (not a venv) so the console scripts land in a directory already on `PATH`; re-verified live afterward with the bare `playhead-hook` command from a fresh shell and it correctly wrote a real event. See "Installing the hook" below.
 - **Step 6 (FastAPI + DB) — done.** `backend/app/` exposes `POST /events` (idempotent on `tool_use_id`), `GET /sessions`, `GET /sessions/{id}/events`. Defaults to local SQLite (`DATABASE_URL` env var to point at Postgres instead). Verified end-to-end: a real event produced by `playhead-hook` was posted, re-posted (confirmed idempotent), and read back correctly.

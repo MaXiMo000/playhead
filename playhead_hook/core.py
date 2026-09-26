@@ -43,7 +43,10 @@ def build_edit_event(*, file_path: str, before_content: str | None, tool_name: s
     before-content was captured by hook.py's PreToolUse handler before the
     call ran -- that's the one fact that can't be reconstructed later."""
     after_content = read_file_text(file_path)
-    tool_success = tool_response.get("success") if isinstance(tool_response, dict) else None
+    # Claude Code only sends PostToolUse after a tool succeeded (failures are
+    # PostToolUseFailure), and real Edit/Write responses carry no `success`
+    # field -- measured live. Reading .get("success") left every event None.
+    tool_success = tool_response.get("success", True) if isinstance(tool_response, dict) else None
     return {
         "session_id": session_id, "tool_use_id": tool_use_id, "tool_name": tool_name,
         "ts_start": ts_start, "ts_end": ts_end, "cwd": cwd, "file_path": file_path,

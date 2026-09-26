@@ -24,6 +24,7 @@ urls.Issues = "https://github.com/MaXiMo000/playhead/issues"
 [project.scripts]
 playhead-hook = "playhead_hook.hook:main"
 playhead-sync = "playhead_hook.sync:main"
+playhead-import = "playhead_hook.transcript:main"
 
 [build-system]
 requires = ["setuptools>=77"]
