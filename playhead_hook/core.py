@@ -57,6 +57,7 @@ def build_edit_event(*, file_path: str, before_content: str | None, tool_name: s
 
 
 def build_bash_event(*, command: str | None, tool_use_id: str, session_id: str | None,
+                     tool_name: str = "Bash",
                       cwd: str, ts_start: float, ts_end: float, tool_response) -> dict:
     """Bash's own Output object has no `success` field at all -- it's
     {stdout, stderr, interrupted, isImage} (the same shape custody's README
@@ -69,7 +70,7 @@ def build_bash_event(*, command: str | None, tool_use_id: str, session_id: str |
         stdout = stderr = None
     output = "\n".join(part for part in (stdout, stderr) if part) or None
     return {
-        "session_id": session_id, "tool_use_id": tool_use_id, "tool_name": "Bash",
+        "session_id": session_id, "tool_use_id": tool_use_id, "tool_name": tool_name,
         "ts_start": ts_start, "ts_end": ts_end, "cwd": cwd, "file_path": None,
         "before_content": None, "after_content": None,
         "bash_command": command, "bash_output": output,

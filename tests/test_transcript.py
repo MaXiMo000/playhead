@@ -83,3 +83,14 @@ def test_cli_spools_events_for_playhead_sync(tmp_path, monkeypatch, capsys):
     assert main([str(transcript)]) == 0  # importing twice overwrites, never duplicates
     assert len(list((tmp_path / ".playhead" / "events").glob("*.json"))) == 6
     assert "6 event(s) spooled" in capsys.readouterr().out
+
+
+def test_powershell_is_a_shell_too():
+    """Claude Code's PowerShell tool: same input and result shape as Bash.
+    147 calls in one Windows machine's transcripts were invisible before."""
+    events = events_from_transcript([
+        _use("p1", "PowerShell", {"command": "Get-ChildItem"}),
+        _result("p1", {"stdout": "a.py", "stderr": "", "interrupted": False, "isImage": False}),
+    ])
+    assert [(e["tool_name"], e["bash_command"], e["bash_output"]) for e in events] == \
+        [("PowerShell", "Get-ChildItem", "a.py")]
